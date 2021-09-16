@@ -10,7 +10,52 @@ Globals:
   Function:
     Timeout: 3
 
+
+
 Resources:
+  TestGateway:
+    Type: AWS::Serverless::HttpApi # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CorsConfiguration:
+        AllowCredentials: true
+        AllowMethods:
+          - GET
+          - PUT
+          - POST
+          - DELETE
+          - PATCH
+          - OPTIONS
+        AllowOrigins:
+          - http://127.0.0.1:3000
+        ExposeHeaders:
+          - Content-Length
+          - Content-Range
+      Domain:
+        DomainName: sam.zero-david.xyz
+        CertificateArn: arn:aws:acm:us-east-1:514226198018:certificate/e60cf2e7-a42e-4d48-bbeb-e0abf5309e7f
+        EndpointConfiguration: REGIONAL
+        # EndpointConfiguration: EDGE
+        Route53:
+          HostedZoneId: Z005726678VSSXY2GMG9
+      Auth:
+        DefaultAuthorizer: AuthorizerAuth0
+        Authorizers:
+          AuthorizerAuth0:
+            FunctionArn: !GetAtt FunctionAuth0.Arn
+            Identity:
+              Headers:
+              - Authorization
+            AuthorizerPayloadFormatVersion: 2.0
+            EnableSimpleResponses: true
+      # Auth:
+      #   DefaultAuthorizer: JWT
+      #   Authorizers:
+      #     JWT:
+      #       JwtConfiguration:
+      #         issuer: "https://dev-l6w47akz.us.auth0.com/"
+      #         audience:
+      #           - https://sam.zero-david.xyz
+      #       IdentitySource: "$request.header.Authorization"
   TestFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -18,14 +63,23 @@ Resources:
       Handler: app.lambdaHandler
       Runtime: nodejs14.x
       Events:
-        HelloWorld:
+        Gateway:
           Type: HttpApi
           Properties:
+            ApiId: !Ref TestGateway
             Path: /{proxy+}
             Method: get
+  FunctionAuth0:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: auth0/
+      Handler: index.handler
+      Runtime: nodejs14.x
       Environment:
         Variables:
-          TEST: !Sub '{{resolve:secretsmanager:bill-apr-9/kubernetes/stage/test:SecretString:DB_USER}}'
+          AUDIENCE: https://sam.zero-david.xyz
+          TOKEN_ISSUER: https://dev-l6w47akz.us.auth0.com/
+          JWKS_URI: https://dev-l6w47akz.us.auth0.com/.well-known/jwks.json
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
@@ -33,7 +87,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   TestApi:
     Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/hello"
+    Value: !Sub "https://${TestGateway}.execute-api.${AWS::Region}.amazonaws.com/hello"
   TestFunction:
     Description: "Hello World Lambda Function ARN"
     Value: !GetAtt TestFunction.Arn
