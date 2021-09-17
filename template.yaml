@@ -37,11 +37,16 @@ Resources:
         # EndpointConfiguration: EDGE
         Route53:
           HostedZoneId: Z005726678VSSXY2GMG9
+      AccessLogSettings:
+        DestinationArn: arn:aws:logs:us-east-1:514226198018:log-group:/aws/sam/stage/cheung0818
+        Format: "$context.identity.sourceIp - - [$context.requestTime] \"$context.httpMethod $context.routeKey $context.protocol\" $context.status $context.responseLength $context.requestId $context.authorizer.error"
+
       Auth:
         DefaultAuthorizer: AuthorizerAuth0
         Authorizers:
           AuthorizerAuth0:
             FunctionArn: !GetAtt FunctionAuth0.Arn
+            FunctionInvokeRole: !GetAtt GatewayInvokeAuthRole.Arn
             Identity:
               Headers:
               - Authorization
@@ -81,6 +86,27 @@ Resources:
           TOKEN_ISSUER: https://dev-l6w47akz.us.auth0.com/
           JWKS_URI: https://dev-l6w47akz.us.auth0.com/.well-known/jwks.json
 
+  GatewayInvokeAuthRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: api-gateway-invoke-auth-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+              - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+      - PolicyName: api-gateway-invoke-auth-lambda
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+              - lambda:InvokeFunction
+              Resource: "*"
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
