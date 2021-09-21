@@ -3,8 +3,16 @@ const express = require("express");
 const statusRoutes = require("app/status");
 const app = express();
 
-console.log("TEST: ^" + process.env.TEST + "$");
+lambdaAuthorizerMiddleware = (req, res, next) => {
+  // comes from authrozier's Context
+  const { id, email, name } = req.requestContext?.authorizer?.lambda || {};
+  if (id && email) {
+    req.user = {id, email, name}
+  }
+  next();
+};
 
+app.use(lambdaAuthorizerMiddleware);
 app.get("/", (req, res, next) => {
   return res.status(200).json({
     message: "Hello from root!",
@@ -13,9 +21,10 @@ app.get("/", (req, res, next) => {
 
 app.use(statusRoutes);
 
-app.get("/hello", (req, res, next) => {
+app.get("/misc", (req, res, next) => {
   return res.status(200).json({
-    message: "Hello from path, man! TEST: ^" + process.env.TEST + "$",
+    headers: req.headers,
+    "req.user": req.user
   });
 });
 

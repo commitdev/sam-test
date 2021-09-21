@@ -70,10 +70,13 @@ module.exports.authenticate = (params) => {
                 context: { scope: decoded.scope }
             }
            */
+          console.log(decoded)
           return {
             isAuthorized : true,
             context: {
-              scope: decoded.scope
+              id: decoded.sub,
+              name: decoded.name,
+              email: decoded.email,
             }
           }
         });

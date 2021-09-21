@@ -68,7 +68,15 @@ Resources:
       Handler: app.lambdaHandler
       Runtime: nodejs14.x
       Events:
-        Gateway:
+        PublicAPI:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TestGateway
+            Path: /status/{proxy+}
+            Method: get
+            Auth:
+              Authorizer: NONE
+        AuthenticateAPI:
           Type: HttpApi
           Properties:
             ApiId: !Ref TestGateway
@@ -82,7 +90,7 @@ Resources:
       Runtime: nodejs14.x
       Environment:
         Variables:
-          AUDIENCE: https://sam.zero-david.xyz
+          AUDIENCE: JQToEH9XFNRWw38prORSK1z6GXUMCRJS
           TOKEN_ISSUER: https://dev-l6w47akz.us.auth0.com/
           JWKS_URI: https://dev-l6w47akz.us.auth0.com/.well-known/jwks.json
 
