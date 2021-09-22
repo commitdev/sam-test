@@ -21,6 +21,10 @@ app.get("/", (req, res, next) => {
 
 app.use(statusRoutes);
 
+app.get("/auth/userInfo", (req, res, next) => {
+  return res.status(200).json(req.user);
+});
+
 app.get("/misc", (req, res, next) => {
   return res.status(200).json({
     headers: req.headers,

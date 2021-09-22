@@ -25,8 +25,13 @@ Resources:
           - DELETE
           - PATCH
           - OPTIONS
-        AllowOrigins:
+        AllowOrigins: 
           - http://127.0.0.1:3000
+        AllowHeaders:
+          - Content-Type
+          - Access-Control-Allow-Headers
+          - Authorization
+          - X-Requested-With
         ExposeHeaders:
           - Content-Length
           - Content-Range
