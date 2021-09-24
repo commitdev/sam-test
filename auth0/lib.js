@@ -4,18 +4,6 @@ const jwksClient = require('jwks-rsa');
 const jwt = require('jsonwebtoken');
 const util = require('util');
 
-// const getPolicyDocument = (effect, resource) => {
-//     const policyDocument = {
-//         Version: '2012-10-17', // default version
-//         Statement: [{
-//             Action: 'execute-api:Invoke', // default action
-//             Effect: effect,
-//             Resource: resource,
-//         }]
-//     };
-//     return policyDocument;
-// }
-
 const client = jwksClient({
   cache: true,
   rateLimit: true,
@@ -27,7 +15,16 @@ const client = jwksClient({
 const getToken = (params) => {
   let tokenString = undefined;
   if (params.type === "REQUEST") {
-    tokenString = params.headers.authorization;
+    const cookieName = process.env.COOKIE_NAME;
+    const foundValueFromCookie = cookieName && params.identitySource.find(i=>i.indexOf(`${cookieName}=`)>=0)
+    if (foundValueFromCookie) {
+      return foundValueFromCookie.substr(cookieName.length+1)
+    } else {
+      // get from header
+
+      tokenString = params.headers.authorization;
+    }
+    
   }
   // else if (params.type === "TOKEN") {
   //   tokenString = params.authorizationToken;
@@ -63,13 +60,6 @@ module.exports.authenticate = (params) => {
             return jwt.verify(token, signingKey, jwtOptions);
         })
         .then((decoded)=> {
-          /*** 
-           * {
-                principalId: decoded.sub,
-                policyDocument: getPolicyDocument('Allow', params.methodArn),
-                context: { scope: decoded.scope }
-            }
-           */
           console.log(decoded)
           return {
             isAuthorized : true,

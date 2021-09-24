@@ -25,16 +25,19 @@ Resources:
           - DELETE
           - PATCH
           - OPTIONS
-        AllowOrigins: 
+        AllowOrigins:
           - http://127.0.0.1:3000
+          - https://app0801.zero-david.xyz
         AllowHeaders:
           - Content-Type
           - Access-Control-Allow-Headers
           - Authorization
           - X-Requested-With
+          - Cookie
         ExposeHeaders:
           - Content-Length
           - Content-Range
+          - Location
       Domain:
         DomainName: sam.zero-david.xyz
         CertificateArn: arn:aws:acm:us-east-1:514226198018:certificate/e60cf2e7-a42e-4d48-bbeb-e0abf5309e7f
@@ -47,14 +50,24 @@ Resources:
         Format: "$context.identity.sourceIp - - [$context.requestTime] \"$context.httpMethod $context.routeKey $context.protocol\" $context.status $context.responseLength $context.requestId $context.authorizer.error"
 
       Auth:
-        DefaultAuthorizer: AuthorizerAuth0
+        DefaultAuthorizer: AuthorizerAuth0FromCookie
         Authorizers:
-          AuthorizerAuth0:
+          AuthorizerAuth0FromHeader:
             FunctionArn: !GetAtt FunctionAuth0.Arn
             FunctionInvokeRole: !GetAtt GatewayInvokeAuthRole.Arn
             Identity:
+              # ReauthorizeEvery: 1
               Headers:
               - Authorization
+            AuthorizerPayloadFormatVersion: 2.0
+            EnableSimpleResponses: true
+          AuthorizerAuth0FromCookie:
+            FunctionArn: !GetAtt FunctionAuth0.Arn
+            FunctionInvokeRole: !GetAtt GatewayInvokeAuthRole.Arn
+            Identity:
+              # ReauthorizeEvery: 5
+              Headers:
+              - Cookie
             AuthorizerPayloadFormatVersion: 2.0
             EnableSimpleResponses: true
       # Auth:
@@ -98,6 +111,33 @@ Resources:
           AUDIENCE: JQToEH9XFNRWw38prORSK1z6GXUMCRJS
           TOKEN_ISSUER: https://dev-l6w47akz.us.auth0.com/
           JWKS_URI: https://dev-l6w47akz.us.auth0.com/.well-known/jwks.json
+          COOKIE_NAME: sam_token
+  CookieBaker:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: auth0/
+      Handler: cookie.handler
+      Runtime: nodejs14.x
+      Events:
+        SetCookie:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TestGateway
+            Path: /authorize
+            Method: post
+            Auth:
+              Authorizer: AuthorizerAuth0FromHeader
+        CheckCookie:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref TestGateway
+            Path: /whoami
+            Method: get
+            Auth:
+              Authorizer: AuthorizerAuth0FromCookie
+      Environment:
+        Variables:
+          COOKIE_TTL_SECONDS: 3600
 
   GatewayInvokeAuthRole:
     Type: 'AWS::IAM::Role'
