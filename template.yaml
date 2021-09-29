@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  sam-app
+
+  Sample SAM Template for sam-app
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  TestFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
+      Runtime: nodejs14.x
+      Tracing: Active
+      Events:
+        HelloWorld:
+          Type: HttpApi
+          Properties:
+            Path: /{proxy+}
+            Method: get
+      Environment:
+        Variables:
+          DB_USER: !Sub '{{resolve:secretsmanager:cheung0818/kubernetes/stage/cheung0818:SecretString:DATABASE_USERNAME}}'
+          DB_PASS: !Sub '{{resolve:secretsmanager:cheung0818/kubernetes/stage/cheung0818:SecretString:DATABASE_PASSWORD}}'
+          DB_HOST: 'cheung0818-stage.cxy11nepafx0.us-east-2.rds.amazonaws.com'
+          DB_DATABASE: 'cheung0818'
+          Version: 1.2
+      VpcConfig:
+        SecurityGroupIds:
+          - sg-00d8cf5646c50e951
+        SubnetIds:
+          - subnet-00066f941c82d85a4
+          - subnet-083f0a5dda4af752e
+
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  TestApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/hello"
+  TestFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt TestFunction.Arn
+  TestFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt TestFunctionRole.Arn

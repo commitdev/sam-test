@@ -1,0 +1,10 @@
+version = 0.1
+[test]
+[test.deploy]
+[test.deploy.parameters]
+stack_name = "bill-sam-test-sep-8"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1udoifhs3l6yk"
+s3_prefix = "bill-sam-test-sep-8"
+region = "us-east-2"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
